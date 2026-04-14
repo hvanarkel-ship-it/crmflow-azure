@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum DealStage {
+  LEAD
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?  @db.NVarChar(80)
+  email         String   @unique @db.NVarChar(255)
+  passwordHash  String   @db.NVarChar(255)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  memberships   Membership[]
+  activities    Activity[]
+  notes         Note[]
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String   @db.NVarChar(120)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships Membership[]
+  companies   Company[]
+  contacts    Contact[]
+  deals       Deal[]
+}
+
+model Membership {
+  id             String   @id @default(cuid())
+  role           Role     @default(MEMBER)
+  createdAt      DateTime @default(now())
+
+  userId         String
+  organizationId String
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model Company {
+  id             String   @id @default(cuid())
+  name           String   @db.NVarChar(160)
+  website        String?  @db.NVarChar(300)
+  industry       String?  @db.NVarChar(120)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  contacts       Contact[]
+  deals          Deal[]
+
+  @@index([organizationId])
+}
+
+model Contact {
+  id             String   @id @default(cuid())
+  firstName      String   @db.NVarChar(80)
+  lastName       String   @db.NVarChar(80)
+  email          String?  @db.NVarChar(255)
+  phone          String?  @db.NVarChar(50)
+  title          String?  @db.NVarChar(120)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  companyId      String?
+  company        Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  deals          DealContact[]
+  notes          Note[]
+
+  @@index([organizationId])
+  @@index([companyId])
+}
+
+model Deal {
+  id             String    @id @default(cuid())
+  name           String    @db.NVarChar(160)
+  stage          DealStage @default(LEAD)
+  amountCents    Int       @default(0)
+  closeDate      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  companyId      String?
+  company        Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  contacts       DealContact[]
+  activities     Activity[]
+  notes          Note[]
+
+  @@index([organizationId])
+  @@index([companyId])
+  @@index([stage])
+}
+
+model DealContact {
+  dealId    String
+  contactId String
+
+  deal      Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@id([dealId, contactId])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  type      String   @db.NVarChar(40)
+  dueAt     DateTime?
+  done      Boolean  @default(false)
+  summary   String   @db.NVarChar(280)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  dealId    String?
+  deal      Deal? @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  ownerId   String
+  owner     User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([dealId])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  body      String   @db.NVarChar(2000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  dealId    String?
+  deal      Deal? @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  authorId  String
+  author    User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([dealId])
+  @@index([contactId])
+  @@index([authorId])
+}
