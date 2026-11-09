@@ -1,5 +1,13 @@
 # CRMFlow (Azure)
 
+<!-- documentation-hub:start -->
+## Projectdocumentatie
+
+[Documentatie-index](DOCUMENTATION.md) · [Installatie en beheer](HANDBOOK.md) · [Verificatie en open punten](VERIFICATION.md)
+
+Bijgewerkt op 9 november 2026. Het handboek onderscheidt bronconfiguratie, historische informatie en nog te verifiëren werking.
+<!-- documentation-hub:end -->
+
 Enterprise-friendly CRM starter designed for:
 
 - **Azure App Service** hosting
